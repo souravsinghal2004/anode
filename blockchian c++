@@ -1,0 +1,124 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <ctime>
+#include <sstream>
+#include <iomanip>
+
+using namespace std;
+
+// --- 1 & 2: SHA-256 Mock Implementation ---
+// (Simplified for demonstration; in production, use OpenSSL)
+string sha256(string input) {
+    unsigned long hash = 5381;
+    for (char c : input) {
+        hash = ((hash << 5) + hash) + c; 
+    }
+    stringstream ss;
+    ss << hex << setw(16) << setfill('0') << hash;
+    return ss.str();
+}
+
+// --- 3: RSA Logic (Simplified) ---
+// Formula: Encryption c = m^e mod n | Decryption m = c^d mod n
+void rsa_demo() {
+    int p = 61, q = 53; // Primes
+    int n = p * q;      // Modulus
+    int e = 17;         // Public Key
+    int d = 2753;       // Private Key
+    int message = 42;
+    
+    long long encrypted = 1;
+    for(int i=0; i<e; i++) encrypted = (encrypted * message) % n;
+    
+    long long decrypted = 1;
+    for(int i=0; i<d; i++) decrypted = (decrypted * encrypted) % n;
+
+    cout << "RSA: Message=" << message << " | Encrypted=" << encrypted << " | Decrypted=" << decrypted << endl;
+}
+
+// --- 4, 6, 7, 8: Blockchain Structure ---
+struct Block {
+    int index;
+    string prevHash;
+    string timestamp;
+    string data; // Transaction History
+    int nonce;
+    string hash;
+
+    Block(int idx, string d, string prev) : index(idx), data(d), prevHash(prev) {
+        nonce = 0;
+        timestamp = to_string(time(0));
+        hash = calculateHash();
+    }
+
+    string calculateHash() {
+        return sha256(to_string(index) + prevHash + timestamp + data + to_string(nonce));
+    }
+
+    // Proof of Work (PoW)
+    void mineBlock(int difficulty) {
+        string target(difficulty, '0');
+        while (hash.substr(0, difficulty) != target) {
+            nonce++;
+            hash = calculateHash();
+        }
+        cout << "Block Mined: " << hash << endl;
+    }
+};
+
+class Blockchain {
+public:
+    vector<Block> chain;
+    int difficulty;
+
+    Blockchain() {
+        chain.emplace_back(Block(0, "Genesis Block", "0"));
+        difficulty = 2;
+    }
+
+    void addBlock(string data) {
+        Block newBlock(chain.size(), data, chain.back().hash);
+        newBlock.mineBlock(difficulty);
+        chain.push_back(newBlock);
+    }
+
+    bool isValid() {
+        for (size_t i = 1; i < chain.size(); i++) {
+            if (chain[i].hash != chain[i].calculateHash()) return false;
+            if (chain[i].prevHash != chain[i-1].hash) return false;
+        }
+        return true;
+    }
+};
+
+// --- 5: Digital Signature Concept ---
+void digitalSignatureDemo() {
+    string document = "Contract Data";
+    string privateKey = "Secret_Key";
+    string signature = sha256(document + privateKey);
+    cout << "Document Signed. Signature: " << signature << endl;
+}
+
+int main() {
+    cout << "--- 1: Message Digest ---" << endl;
+    cout << "Hash of 'Blockchain Developer': " << sha256("Blockchain Developer") << endl << endl;
+
+    cout << "--- 3: RSA Cryptography ---" << endl;
+    rsa_demo(); cout << endl;
+
+    cout << "--- 4, 6, 7: Building Blockchain (5 Nodes) ---" << endl;
+    Blockchain myChain;
+    myChain.addBlock("Tx: Alice sent 10 BTC");
+    myChain.addBlock("Tx: Bob sent 5 BTC");
+    myChain.addBlock("Tx: Charlie sent 2 BTC");
+    myChain.addBlock("Tx: Dave sent 1 BTC");
+
+    cout << "\n--- 8: Validating Blockchain ---" << endl;
+    cout << "Is Blockchain Valid? " << (myChain.isValid() ? "Yes" : "No") << endl << endl;
+
+    cout << "--- 5: Digital Signature ---" << endl;
+    digitalSignatureDemo();
+
+    return 0;
+}
